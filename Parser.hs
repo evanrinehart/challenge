@@ -1,10 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Parser where
 
+import Prelude hiding (takeWhile)
+
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Attoparsec.Text
 import Control.Monad
 import Control.Applicative
+import Data.Maybe
 
 import Types
 
@@ -20,6 +24,8 @@ inputFile = do
   spaces
   ops <- count opCount operation
   endOfInput
+  unless (appendsAreValid ops) (fail "sum of appended words too big")
+  unless (deletesAreValid ops) (fail "sum of deletions too big")
   return ops
 
 operation :: Parser Op
@@ -35,14 +41,14 @@ operation = do
 
 append :: Parser Op
 append = do
-  str <- takeTill (\c -> c == '\n' || c == '\r')
+  str <- takeWhile isLowerAlpha
   endOfOp
   spaces
   return (Append str)
 
 delete :: Parser Op
 delete = do
-  k <- decimal
+  k <- numberBetween 1 (10^6)
   when (k == 0) (fail "delete 0 is not allowed")
   spaces
   endOfOp
@@ -51,7 +57,7 @@ delete = do
 
 printOp :: Parser Op
 printOp = do
-  i <- decimal
+  i <- numberBetween 1 (10^6)
   when (i == 0) (fail "print 0 is not allowed, 1 is the first character")
   spaces
   endOfOp
@@ -79,3 +85,18 @@ endOfOp = do
 
 spaces :: Parser ()
 spaces = skipWhile isHorizontalSpace
+
+
+isLowerAlpha :: Char -> Bool
+isLowerAlpha c = c >= 'a' && c <= 'z'
+
+
+appendsAreValid :: [Op] -> Bool
+appendsAreValid ops =
+  let words = catMaybes (map appendPayload ops) in
+  sum (map T.length words) <= 10^6
+
+deletesAreValid :: [Op] -> Bool
+deletesAreValid ops =
+  let deletes = catMaybes (map deleteCount ops) in
+  sum deletes <= 2 * 10^6
