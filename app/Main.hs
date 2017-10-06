@@ -1,22 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import System.IO (hPutStrLn, stderr)
-import Control.Monad (forM_)
-import qualified Data.Text.IO as T
+import System.IO (stdin)
+import Control.Monad (forM_, unless)
+import Control.Exception (throwIO)
 
-import Types
+import Input
 import Parser
 import Editor
 
 main :: IO ()
 main = do
-  input <- T.getContents
+  input <- loadInput stdin
   case parseInput input of
-    Left errmsg -> do
-      hPutStrLn stderr "Failed to parse input data"
-      hPutStrLn stderr errmsg
+    Left errmsg -> throwIO (ParseFailedException errmsg)
     Right ops -> do
-      let (outs, _) = runEditor ops ("",[])
+      let blankState = ("",[])
+      unless (areOpsOk ops blankState) $
+        throwIO BadOperationException
+      let (outs, _) = runEditor ops blankState
       forM_ outs $ \c -> do
         putStrLn [c]

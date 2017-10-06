@@ -10,6 +10,9 @@ import Control.Monad
 import Control.Applicative
 import Data.Maybe
 
+import Control.Exception
+import Data.Typeable
+
 import Types
 
 parseInput :: Text -> Either String [Op]
@@ -100,3 +103,14 @@ deletesAreValid :: [Op] -> Bool
 deletesAreValid ops =
   let deletes = catMaybes (map deleteCount ops) in
   sum deletes <= 2 * 10^6
+
+
+
+
+data ParseFailedException = ParseFailedException String
+  deriving (Typeable)
+
+instance Show ParseFailedException where
+  show (ParseFailedException msg) = "ParseFailedException (" ++ msg ++ ")"
+
+instance Exception ParseFailedException
