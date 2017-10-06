@@ -14,6 +14,7 @@ main = do
   input <- T.getContents
   case parseInput input of
     Left errmsg -> do
+      hPutStrLn stderr "Failed to parse input data"
       hPutStrLn stderr errmsg
     Right ops -> do
       let (outs, _) = runEditor ops ("",[])
