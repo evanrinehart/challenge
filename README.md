@@ -1,24 +1,21 @@
 # challenge
 
 ```
-λ> git clone https://github.com/evanrinehart/challenge challenge-evan
+git clone https://github.com/evanrinehart/challenge challenge-evan
 ...
 ```
 
 ```
-λ> cd challenge-evan
-λ> stack build
+cd challenge-evan
+stack build
 ...
 ```
 
 ```
-λ> stack test
+stack test
 ...
 ```
 
 ```
-λ> stack exec challenge < extra/sample
-c
-y
-a
+stack exec challenge < extra/sample
 ```
