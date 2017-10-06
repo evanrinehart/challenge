@@ -1,17 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Tests where
+{-# LANGUAGE TemplateHaskell #-}
+module Main where
 
 import Test.QuickCheck
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 import Data.Either
+import System.IO
+import System.Exit
 
 import Types
 import Encoder
 import Parser
 import Editor
-
-prop_RevRev xs = reverse (reverse xs) == xs
 
 generateOps :: Gen [Op]
 generateOps = begin where
@@ -142,3 +143,16 @@ prop_goodFileEdits = runEditor ops ("",[]) == ("e", ("example",[""])) where
       "3 1",
       "4"
     ]
+
+return []
+runTests = $quickCheckAll
+
+main :: IO ()
+main = do
+  ok <- runTests
+  if ok
+    then return ()
+    else do
+      hPutStrLn stderr "test suite failed"
+      exitFailure
+

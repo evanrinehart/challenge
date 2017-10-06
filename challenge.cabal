@@ -1,0 +1,43 @@
+name:                challenge
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/challenge#readme
+license:             BSD3
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2017 Author name here
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Parser Encoder Editor Types
+  build-depends:       attoparsec >= 0.13 && < 0.14,
+                       text >= 1.2 && < 1.3,
+                       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+executable challenge
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base,
+                       challenge,
+                       text
+                    
+  default-language:    Haskell2010
+
+test-suite challenge-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       text, base, challenge, QuickCheck
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/challenge
