@@ -2,18 +2,15 @@
 
 ```
 git clone https://github.com/evanrinehart/challenge challenge-evan
-...
 ```
 
 ```
 cd challenge-evan
 stack build
-...
 ```
 
 ```
 stack test
-...
 ```
 
 ```
