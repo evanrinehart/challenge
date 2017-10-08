@@ -2,22 +2,26 @@
 module Main where
 
 import System.IO (stdin)
-import Control.Monad (forM_, unless)
+import Control.Monad (forM_)
 import Control.Exception (throwIO)
 
+import Types
 import Input
 import Parser
+import Validator
 import Editor
+
+blankState :: EditorState
+blankState = ("",[])
 
 main :: IO ()
 main = do
   input <- loadInput stdin
   case parseInput input of
     Left errmsg -> throwIO (ParseFailedException errmsg)
-    Right ops -> do
-      let blankState = ("",[])
-      unless (areOpsOk ops blankState) $
-        throwIO BadOperationException
-      let (outs, _) = runEditor ops blankState
-      forM_ outs $ \c -> do
-        putStrLn [c]
+    Right ops -> case validateSession ops blankState of
+      Left problem -> throwIO (BadOperationException problem)
+      Right session -> do
+        let (outs, _) = runEditor session
+        forM_ outs $ \c -> do
+          putStrLn [c]

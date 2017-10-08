@@ -7,18 +7,22 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Attoparsec.Text
 import Control.Monad
+import Control.Monad.Writer
 import Control.Applicative
 import Data.Maybe
+import Data.List (intercalate)
 
 import Control.Exception
 import Data.Typeable
 
+import Common
 import Types
 
-parseInput :: Text -> Either String [Op]
+-- | Parse raw input to get a valid list of ops or a parse error message.
+parseInput :: Text -> Either String ValidOps
 parseInput = parseOnly inputFile
 
-inputFile :: Parser [Op]
+inputFile :: Parser ValidOps
 inputFile = do
   spaces
   opCount <- decimal
@@ -27,19 +31,28 @@ inputFile = do
   spaces
   ops <- count opCount operation
   endOfInput
-  unless (appendsAreValid ops) (fail "sum of appended words too big")
-  unless (deletesAreValid ops) (fail "sum of deletions too big")
-  return ops
+  case validateOps ops of
+    Right validOps -> return validOps
+    Left problems  -> fail (intercalate ", " problems)
+
+validateOps :: [Op] -> Either [String] ValidOps
+validateOps ops = answer where
+  answer = case execWriter go of
+    []       -> Right (VO ops)
+    problems -> Left problems
+  go = do
+    unless (appendsAreValid ops) (tell ["sum of appended words too big"])
+    unless (deletesAreValid ops) (tell ["sum of deletions too big"])
 
 operation :: Parser Op
 operation = do
   t <- numberBetween 1 4
   spaces
   case t of
-    1 -> append  <?> "Append"
-    2 -> delete  <?> "Delete"
-    3 -> printOp <?> "Print"
-    4 -> undo    <?> "Undo"
+    1 -> append  <?> "Append Op Parser"
+    2 -> delete  <?> "Delete Op Parser"
+    3 -> printOp <?> "Print Op Parser"
+    4 -> undo    <?> "Undo Op Parser"
     _ -> error ("bug in parser, number not between 1 and 4 (" ++ show t ++ ")")
 
 append :: Parser Op
@@ -76,10 +89,12 @@ undo = do
 
 numberBetween :: Int -> Int -> Parser Int
 numberBetween a b = do
-  i <- decimal
-  when (i < a || i > b) $ do
+  i <- decimal :: Parser Integer
+  let c = toInteger a
+  let d = toInteger b
+  when (i < c || i > d) $ do
     fail ("expected number in range [" ++ show a ++ "," ++ show b ++ "] (got " ++ show i ++ ")")
-  return i
+  return (fromInteger i)
 
 endOfOp :: Parser ()
 endOfOp = do
@@ -88,11 +103,6 @@ endOfOp = do
 
 spaces :: Parser ()
 spaces = skipWhile isHorizontalSpace
-
-
-isLowerAlpha :: Char -> Bool
-isLowerAlpha c = c >= 'a' && c <= 'z'
-
 
 appendsAreValid :: [Op] -> Bool
 appendsAreValid ops =
@@ -103,9 +113,6 @@ deletesAreValid :: [Op] -> Bool
 deletesAreValid ops =
   let deletes = catMaybes (map deleteCount ops) in
   sum deletes <= 2 * 10^6
-
-
-
 
 data ParseFailedException = ParseFailedException String
   deriving (Typeable)

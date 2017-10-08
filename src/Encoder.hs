@@ -7,8 +7,8 @@ import Data.Monoid ((<>))
 
 import Types
 
-encode :: [Op] -> Text
-encode ops =
+encode :: ValidOps -> Text
+encode (VO ops) =
   let l = length ops in
   let line1 = pack (show l) in
   T.unlines (pack (show l) : map encodeOp ops)

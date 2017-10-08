@@ -4,15 +4,24 @@ module Main where
 
 import Test.QuickCheck
 import qualified Data.Text as T
+import Data.Text.Encoding
 import Data.Monoid ((<>))
 import Data.Either
 import System.IO
 import System.Exit
+import Control.Monad (unless)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
+import Data.Word
+import Data.Char
 
+import Common
 import Types
 import Encoder
 import Parser
+import Validator
 import Editor
+import Input
 
 generateOps :: Gen [Op]
 generateOps = begin where
@@ -46,11 +55,8 @@ chooseOp (s,ss) = do
       then chooseOp (s, ss)
       else return Undo
 
-newtype OpList = OpList { getOps :: [Op] }
-  deriving Show
-
-instance Arbitrary OpList where
-  arbitrary = fmap OpList generateOps
+instance Arbitrary ValidOps where
+  arbitrary = fmap VO generateOps
 
 newtype ES = ES { unES :: EditorState }
   deriving Show
@@ -70,17 +76,56 @@ instance Arbitrary LowerAlpha where
     str <- fmap T.pack (vectorOf n (arbitrary `suchThat` isLowerAlpha))
     return (LA str)
 
-prop_decodeEncodeIsRight (OpList ops) = (parseInput . encode) ops == Right ops
+data BadEncoding = BadEncoding
+  { beBytes :: ByteString
+  , beBadWord8 :: Word8 }
+    deriving Show
 
-prop_appendAppends (LA str) (ES (s,ss)) =
-  edit (Append str) (s,ss) == (Nothing, (s <> str, s:ss))
+instance Arbitrary BadEncoding where
+  arbitrary = do
+    ops <- arbitrary :: Gen ValidOps
+    let goodBytes = encodeUtf8 (encode ops)
+    badWord8 <- arbitrary `suchThat` (not . validByte) :: Gen Word8
+    i <- choose (0, BS.length goodBytes)
+    let badBytes = BS.pack (insertAt i badWord8 (BS.unpack goodBytes)) 
+    return (BadEncoding badBytes badWord8)
 
-prop_deleteDeletes = edit (Delete 3) ("example", []) == (Nothing, ("exam", ["example"]))
+-- spot check the validByte function
+w8 = fromIntegral . ord
+w8ok = validByte . w8
+w8bad = not . validByte . w8
+prop_validByte1 = w8ok 'a'
+prop_validByte2 = w8ok 'z'
+prop_validByte3 = w8ok ' '
+prop_validByte4 = w8ok 'j'
+prop_validByte5 = w8ok '0'
+prop_validByte6 = w8ok '9'
+prop_validByte7 = w8ok '4'
+prop_validByte8 = w8bad (pred 'a')
+prop_validByte9 = w8bad (succ 'z')
+prop_validByte10 = w8bad (pred ' ')
+prop_validByte11 = w8bad (succ ' ')
+prop_validByte12 = w8bad (pred '0')
+prop_validByte13 = w8bad (succ '9')
+prop_validByte14 = w8bad 'V'
+prop_validByte15 = w8bad '#'
+prop_validByte16 = not (validByte 137)
+prop_validByte17 = not (validByte 255)
+prop_validByte18 = not (validByte 0)
 
-prop_printPrints = edit (Print 4) ("example", []) == (Just 'm', ("example", []))
+-- test the validateByteString function
+prop_validateByteStringYes :: ValidOps -> Bool
+prop_validateByteStringYes ops =
+  validateByteString goodBytes == Right goodText where
+    goodBytes = encodeUtf8 (encode ops)
+    goodText = decodeUtf8 goodBytes
 
-prop_undoUndoes = edit Undo ("exam", ["example"]) == (Nothing, ("example", []))
+prop_validateByteStringNo (BadEncoding bytes badWord8) =
+  validateByteString bytes == Left badWord8
 
+
+-- test parseInput
+prop_decodeEncodeIsRight ops = (parseInput . encode) ops == Right ops
 
 prop_goodFileDoesParse = parseInput goodFile == Right goodData where
   goodFile = 
@@ -91,7 +136,7 @@ prop_goodFileDoesParse = parseInput goodFile == Right goodData where
       "3 1",
       "4"
     ]
-  goodData = [Append "example", Delete 5, Print 1, Undo]
+  Right goodData = validateOps [Append "example", Delete 5, Print 1, Undo]
 
 prop_badFileNoParse1 = isLeft (parseInput badFile1) where
   badFile1 = T.unlines [
@@ -134,7 +179,36 @@ prop_badFileNoParse6 = isLeft (parseInput badFile6) where
       "3 0" -- no print 0
     ]
 
-prop_goodFileEdits = runEditor ops ("",[]) == ("e", ("example",[""])) where
+prop_badFileNoParse7 = isLeft (parseInput "")
+
+
+-- test validateSession
+prop_validateSessionYes =
+  isRight $ validateSession (VO [Undo]) ("a",[""]) 
+
+prop_validateSessionNo1 =
+  isLeft $ validateSession (VO [Undo]) ("",[])
+
+prop_validateSessionNo2 =
+  isLeft $ validateSession (VO [Delete 3]) ("ab",[""])
+
+prop_validateSessionNo3 =
+  isLeft $ validateSession (VO [Print 3]) ("ab",[""])
+  
+
+-- test the edit function
+prop_appendAppends (LA str) (ES (s,ss)) =
+  edit (Append str) (s,ss) == (Nothing, (s <> str, s:ss))
+
+prop_deleteDeletes = edit (Delete 3) ("example", []) == (Nothing, ("exam", ["example"]))
+
+prop_printPrints = edit (Print 4) ("example", []) == (Just 'm', ("example", []))
+
+prop_undoUndoes = edit Undo ("exam", ["example"]) == (Nothing, ("example", []))
+
+-- test the runEditor function
+prop_goodFileEdits = runEditor session == ("e", ("example",[""])) where
+  Right session = validateSession ops ("",[])
   Right ops = parseInput goodFile
   goodFile = T.unlines [
       "4",
@@ -144,15 +218,15 @@ prop_goodFileEdits = runEditor ops ("",[]) == ("e", ("example",[""])) where
       "4"
     ]
 
+-- weird TH quickcheck hack
 return []
 runTests = $quickCheckAll
 
 main :: IO ()
 main = do
   ok <- runTests
-  if ok
-    then return ()
-    else do
-      hPutStrLn stderr "test suite failed"
-      exitFailure
+  unless ok $ do
+    hPutStrLn stderr "test suite failed"
+    exitFailure
+
 
