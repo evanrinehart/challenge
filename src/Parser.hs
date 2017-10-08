@@ -18,6 +18,13 @@ import Data.Typeable
 import Common
 import Types
 
+totalAppendMaxChars :: Int
+totalAppendMaxChars = 10^6
+
+totalDeleteMaxChars :: Int
+totalDeleteMaxChars = 2 * 10^6
+
+
 -- | Parse raw input to get a valid list of ops or a parse error message.
 parseInput :: Text -> Either String ValidOps
 parseInput = parseOnly inputFile
@@ -107,12 +114,12 @@ spaces = skipWhile isHorizontalSpace
 appendsAreValid :: [Op] -> Bool
 appendsAreValid ops =
   let words = catMaybes (map appendPayload ops) in
-  sum (map T.length words) <= 10^6
+  sum (map T.length words) <= totalAppendMaxChars
 
 deletesAreValid :: [Op] -> Bool
 deletesAreValid ops =
   let deletes = catMaybes (map deleteCount ops) in
-  sum deletes <= 2 * 10^6
+  sum deletes <= totalDeleteMaxChars
 
 data ParseFailedException = ParseFailedException String
   deriving (Typeable)

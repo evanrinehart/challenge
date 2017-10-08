@@ -34,7 +34,7 @@ interpreter, the solution would be pretty simple. But there are two issues.
 
 - The simple interpreter would technically be a partial function, since
 many combinations of Op and EditorState would be nonsense. Without actually
-verifying the input somehow, the program would crash badly.
+verifying the input somehow, the program could crash badly.
 - If the input is not well formed after all, the program could crash badly
 even before getting to the parse stage. For instance the input data may not
 be nice UTF-8.
@@ -79,7 +79,7 @@ parseInput :: Text -> Either String ValidOps
 ## Operation validator stage
 
 Even if you have a ValidOps, you may not be able to use it on a given
-editor state, not even the initial empty state ("",[]). So we can prescreen
+editor state, not even the initial empty state `("",[])`. So we can prescreen
 a given combination of ValidOps and EditorState and determine the operations
 can hypothetically be carried out. I made another data type to indicate this
 check has been performed for the paired ops and state:
@@ -89,7 +89,7 @@ data ValidEditorSession = VES ValidOps EditorState
 
 data BadOperation = BO
   { boLineNo :: Int
-  , boMsg :: String }
+  , boMsg    :: String }
 
 validateSession :: ValidOps -> EditorState -> Either BadOperation ValidEditorSession
 
@@ -117,21 +117,22 @@ to actually run it.
 Aside: splitting up the validation from the interpretation seems to be a
 promising pattern in the world of dependent types. The smart constructor could
 require hard evidence of the properties it is responsible for, removing the
-need for a kernel of trust. Though this puts more of a burden on the parser.
+need for a kernel of trust. Although this puts more of a burden on the parser.
 
 ## Put it all together and run the editor
 
-All the IO is consolidated in the Main source file. This includes getting the
-input from stdin, throwing IO exceptions when problems are detected, and
-printing out the final answer. The main IO action essentially just runs
-all the above functions, and throws an exception in response to Left results.
+All the IO is consolidated in the app/Main.hs source file. This includes
+getting the input from stdin, throwing IO exceptions when problems are
+detected, and printing out the final answer. The main IO action essentially
+just runs all the above functions, and throws an exception in response to Left
+results.
 
 ## Testing
 
 Since each stage consists of pure functions, testing should be easy. To use
 QuickCheck, it's necessary to have Arbitrary instances for data to be tested.
 To generate arbitrary (valid) input data, I also made a simple encoder which
-returns a set of ValidOps to Text form.
+returns a set of valid ops to Text form.
 
 ```
 encode :: ValidOps -> Text
