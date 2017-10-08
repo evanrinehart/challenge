@@ -7,22 +7,11 @@ import Data.Char
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Control.Monad
-import System.IO
 import Data.Word
 import Data.Typeable
 import qualified Data.List as L
 
 import Common
-
--- | Read all the raw data from handle, check it only contains valid bytes
--- | (which we expect to decode as Text), and return the decoded Text.
--- | Throws BadEncodingException if it detects an invalid byte.
-loadInput :: Handle -> IO Text
-loadInput h = do
-  bytes <- BS.hGetContents h
-  case validateByteString bytes of
-    Left w8   -> throwIO (BadEncodingException w8 (chr (fromIntegral w8)))
-    Right txt -> return txt
 
 -- | Attempt to decode a bytes string. If it detects an invalid byte that
 -- | byte is returned instead.

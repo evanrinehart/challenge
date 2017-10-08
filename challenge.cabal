@@ -28,6 +28,7 @@ executable challenge
   ghc-options:         -threaded -Wall -rtsopts -with-rtsopts=-N
   build-depends:       base,
                        challenge,
+                       bytestring,
                        text
   default-language:    Haskell2010
 

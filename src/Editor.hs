@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Editor where
 
 import Data.Monoid ((<>))
@@ -33,3 +34,5 @@ edit Undo       (_,s:ss) = (Nothing,          (s, ss))
 edit Undo       (_,[])   = error "edit: unable to undo past the beginning!"
 --edit Undo       (s,[])   = (s,[]) -- option to hide the error
 
+blankEditorState :: EditorState
+blankEditorState = ("",[])
