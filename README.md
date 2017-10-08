@@ -92,22 +92,32 @@ data BadOperation = BO
   , boMsg :: String }
 
 validateSession :: ValidOps -> EditorState -> Either BadOperation ValidEditorSession
+
 ```
 
 Outside the Validator module, we should trust that if we have a `VES ops
 state`, then it is valid to run ops on the state. Otherwise there is a bug in
 that module!
 
+```
+runEditor :: ValidEditorSession -> ([Char], EditorSession)
+```
+
 This approach can be contrasted with putting Maybe on the runEditor return
-type. If any invalid situation occurs during interpretation, return Nothing.
-This would (heavy-handedly) fix the partiality of runEditor, but has some
-disadvantages:
+type. I.e. if any invalid situation occurs during interpretation, return
+Nothing.  This would (heavy-handedly) fix the partiality of runEditor, but has
+some disadvantages:
 
 - The implementation of the interpreter would be complicated by the munging
 of Maybe values and by doing the checks better done earlier in the process.
 - We would only be able to get feedback on invalid operations after carrying
 out the expensive editing operations. To validate a program, it sucks to have
 to actually run it.
+
+Aside: splitting up the validation from the interpretation seems to be a
+promising pattern in the world of dependent types. The smart constructor could
+require hard evidence of the properties it is responsible for, removing the
+need for a kernel of trust. Though this puts more of a burden on the parser.
 
 ## Put it all together and run the editor
 
