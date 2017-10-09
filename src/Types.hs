@@ -24,5 +24,5 @@ newtype ValidOps = VO { unValidOps :: [Op] }
 type EditorState = (Text, [Text]) -- cheapo non-empty list
 
 -- | A valid ops sequence paired with an editor state. The ops have been
--- | verified to be valid when used on this starting state.
+-- verified to be valid when used on this starting state.
 data ValidEditorSession = VES ValidOps EditorState

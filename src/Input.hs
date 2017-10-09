@@ -14,7 +14,7 @@ import qualified Data.List as L
 import Common
 
 -- | Attempt to decode a bytes string. If it detects an invalid byte that
--- | byte is returned instead.
+-- byte is returned instead.
 validateByteString :: ByteString -> Either Word8 Text
 validateByteString bytes = case L.find (not . validByte) (BS.unpack bytes) of
   Nothing -> Right (decodeUtf8 bytes)

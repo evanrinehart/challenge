@@ -17,7 +17,7 @@ data ValidationState = VS
   , sizeHistory :: [Int] } deriving Show
 
 -- | Check that a list of operations is valid against the given starting
--- | editor state.
+-- editor state.
 validateSession :: ValidOps -> EditorState -> Either BadOperation ValidEditorSession
 validateSession vo@(VO ops) st@(current,history) = go 2 ops startingValidationState where
   startingValidationState = VS (T.length current) (map T.length history)
