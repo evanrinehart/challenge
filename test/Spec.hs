@@ -14,6 +14,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Word
 import Data.Char
+import Data.Attoparsec.Text
 
 import Common
 import Types
@@ -180,6 +181,17 @@ prop_badFileNoParse6 = isLeft (parseInput badFile6) where
     ]
 
 prop_badFileNoParse7 = isLeft (parseInput "")
+
+-- test the numberBetween parser
+
+prop_numberBetween1 =
+  parseOnly (numberBetween 3 5) "3" == Right 3
+
+prop_numberBetween2 =
+  parseOnly (numberBetween 3 5) "5" == Right 5
+
+prop_numberBetween3 = isLeft (parseOnly (numberBetween 3 5) "2")
+prop_numberBetween4 = isLeft (parseOnly (numberBetween 3 5) "6")
 
 
 -- test validateSession
