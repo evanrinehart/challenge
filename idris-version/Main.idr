@@ -85,7 +85,7 @@ data Edit : Metrics -> Type where
   Undo   : Edit met -> (p : UndoOk met) -> Edit (undo met)
 
 ||| Read an edit session from a string, if possible. The index (metrics) is
-||| determined dynamically so it must returned in a dependent pair.
+||| determined dynamically so it must be returned in a dependent pair.
 ||| The edit chain can then be used in metric-agnostic functions.
 parse : String -> Maybe (met : Metrics ** Edit met)
 parse input = Nothing -- Not yet implemented
